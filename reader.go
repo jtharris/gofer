@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
+	"os/exec"
 
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
@@ -11,7 +12,7 @@ import (
 type GoferConfig struct {
 	Name        string
 	Description string
-	Tasks       []GoferTask
+	Tasks       map[string]GoferTask
 }
 
 func (c *GoferConfig) ToCliApp() *cli.App {
@@ -19,9 +20,9 @@ func (c *GoferConfig) ToCliApp() *cli.App {
 	app.Name = c.Name
 	app.Usage = c.Description
 
-	commands := make([]cli.Command, len(c.Tasks))
-	for i, task := range c.Tasks {
-		commands[i] = task.ToCommand()
+	commands := []cli.Command{}
+	for name, task := range c.Tasks {
+		commands = append(commands, task.ToCommand(name))
 	}
 
 	app.Commands = commands
@@ -48,18 +49,24 @@ func NewConfig(configFile string) (*GoferConfig, error) {
 
 // TODO:  Support dependencies later
 type GoferTask struct {
-	Name        string
 	Description string
 	Command     string
 }
 
-func (t GoferTask) ToCommand() cli.Command {
+func (t GoferTask) ToCommand(name string) cli.Command {
 	return cli.Command{
-		Name:  t.Name,
+		Name:  name,
 		Usage: t.Description,
 		Action: func(c *cli.Context) error {
-			fmt.Println("Running command:", t.Command)
-			return nil
+			// TODO:  Introduce verbose mode
+			//fmt.Println("Running command:", t.Command)
+			out, err := exec.Command("bash", "-c", t.Command).Output()
+
+			// TODO:  Introduce quiet mode
+			// TODO:  Introduce file logging
+			log.Println(string(out))
+
+			return err
 		},
 	}
 }
