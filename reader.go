@@ -10,15 +10,21 @@ import (
 )
 
 type GoferConfig struct {
-	Name        string
-	Description string
-	Tasks       map[string]GoferTask
+	Tasks map[string]GoferTask
 }
 
 func (c *GoferConfig) ToCliApp() *cli.App {
 	app := cli.NewApp()
-	app.Name = c.Name
-	app.Usage = c.Description
+	app.Name = "Gofer"
+	app.Usage = "Your loyal task runner"
+	app.Version = "0.0.1"
+
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:  "explain, e",
+			Usage: "Explain the execution plan, without taking any action",
+		},
+	}
 
 	commands := []cli.Command{}
 	for name, task := range c.Tasks {
@@ -58,10 +64,14 @@ func (t GoferTask) ToCommand(name string) cli.Command {
 		Name:  name,
 		Usage: t.Description,
 		Action: func(c *cli.Context) error {
-			// TODO:  Introduce verbose mode
-			//fmt.Println("Running command:", t.Command)
+			if c.Parent().Bool("explain") {
+				log.Println("Command:", t.Command)
+				return nil
+			}
+
 			out, err := exec.Command("bash", "-c", t.Command).Output()
 
+			// TODO:  Introduce verbose mode
 			// TODO:  Introduce quiet mode
 			// TODO:  Introduce file logging
 			log.Println(string(out))
