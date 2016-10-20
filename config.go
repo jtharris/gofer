@@ -1,9 +1,7 @@
-package main
+package gofer
 
 import (
 	"io/ioutil"
-	"log"
-	"os/exec"
 
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
@@ -23,6 +21,10 @@ func (c *GoferConfig) ToCliApp() *cli.App {
 		cli.BoolFlag{
 			Name:  "explain, e",
 			Usage: "Explain the execution plan, without taking any action",
+		},
+		cli.BoolFlag{
+			Name:  "quiet, q",
+			Usage: "Suppress command output when running tasks",
 		},
 	}
 
@@ -51,32 +53,4 @@ func NewConfig(configFile string) (*GoferConfig, error) {
 	}
 
 	return config, nil
-}
-
-// TODO:  Support dependencies later
-type GoferTask struct {
-	Description string
-	Command     string
-}
-
-func (t GoferTask) ToCommand(name string) cli.Command {
-	return cli.Command{
-		Name:  name,
-		Usage: t.Description,
-		Action: func(c *cli.Context) error {
-			if c.Parent().Bool("explain") {
-				log.Println("Command:", t.Command)
-				return nil
-			}
-
-			out, err := exec.Command("bash", "-c", t.Command).Output()
-
-			// TODO:  Introduce verbose mode
-			// TODO:  Introduce quiet mode
-			// TODO:  Introduce file logging
-			log.Println(string(out))
-
-			return err
-		},
-	}
 }
