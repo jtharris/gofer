@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"os/exec"
 
 	"github.com/urfave/cli"
 )
@@ -17,23 +16,16 @@ func (t GoferTask) ToCommand(name string) cli.Command {
 	return cli.Command{
 		Name:  name,
 		Usage: t.Description,
-		Action: func(c *cli.Context) error {
-			explain := c.Parent().Bool("explain")
-			quiet := !explain && c.Parent().Bool("quiet")
+		Action: func(context *cli.Context) error {
+			for _, command := range t.Commands {
+				output, err := NewRunner(command, context).Run()
 
-			for i, command := range t.Commands {
-				if explain {
-					log.Println("Command", i, ": ", command)
-				} else {
-					out, err := exec.Command("bash", "-c", command).Output()
+				if len(output) > 0 {
+					log.Println(output)
+				}
 
-					if !quiet {
-						log.Println(string(out))
-					}
-
-					if err != nil {
-						return err
-					}
+				if err != nil {
+					return err
 				}
 			}
 
