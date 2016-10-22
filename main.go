@@ -1,4 +1,4 @@
-package gofer
+package main
 
 import (
 	"log"

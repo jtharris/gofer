@@ -1,4 +1,4 @@
-package gofer
+package main
 
 import (
 	"log"
@@ -10,7 +10,7 @@ import (
 // TODO:  Support dependencies later
 type GoferTask struct {
 	Description string
-	Command     string
+	Commands    []string
 }
 
 func (t GoferTask) ToCommand(name string) cli.Command {
@@ -18,18 +18,26 @@ func (t GoferTask) ToCommand(name string) cli.Command {
 		Name:  name,
 		Usage: t.Description,
 		Action: func(c *cli.Context) error {
-			if c.Parent().Bool("explain") {
-				log.Println("Command:", t.Command)
-				return nil
+			explain := c.Parent().Bool("explain")
+			quiet := !explain && c.Parent().Bool("quiet")
+
+			for i, command := range t.Commands {
+				if explain {
+					log.Println("Command", i, ": ", command)
+				} else {
+					out, err := exec.Command("bash", "-c", command).Output()
+
+					if !quiet {
+						log.Println(string(out))
+					}
+
+					if err != nil {
+						return err
+					}
+				}
 			}
 
-			out, err := exec.Command("bash", "-c", t.Command).Output()
-
-			if c.Parent().Bool("quiet") == false {
-				log.Println(string(out))
-			}
-
-			return err
+			return nil
 		},
 	}
 }
