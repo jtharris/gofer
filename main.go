@@ -12,5 +12,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	config.ToCliApp().Run(os.Args)
+	app, err := config.ToCliApp()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	app.Run(os.Args)
 }
