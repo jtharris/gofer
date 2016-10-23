@@ -7,25 +7,22 @@ import (
 )
 
 type Runner interface {
-	Run() (string, error)
+	Run(command string) (string, error)
 }
 
-type explainRunner struct {
-	command string
-}
+type explainRunner struct{}
 
-func (e explainRunner) Run() (string, error) {
-	return e.command, nil
+func (e *explainRunner) Run(command string) (string, error) {
+	return command, nil
 }
 
 type shellRunner struct {
-	command string
-	quiet   bool
+	quiet bool
 }
 
-func (s shellRunner) Run() (string, error) {
+func (s *shellRunner) Run(command string) (string, error) {
 	// TODO:  Support other shells here?
-	out, err := exec.Command("bash", "-c", s.command).CombinedOutput()
+	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 
 	if s.quiet {
 		out = nil
@@ -34,15 +31,12 @@ func (s shellRunner) Run() (string, error) {
 	return string(out), err
 }
 
-func NewRunner(command string, context *cli.Context) Runner {
+func NewRunner(context *cli.Context) Runner {
 	if context.Parent().Bool("explain") {
-		return explainRunner{
-			command: command,
-		}
+		return &explainRunner{}
 	}
 
-	return shellRunner{
-		command: command,
-		quiet:   context.Parent().Bool("quiet"),
+	return &shellRunner{
+		quiet: context.Parent().Bool("quiet"),
 	}
 }

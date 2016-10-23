@@ -17,7 +17,16 @@ func (c *GoferConfig) ToCliApp() *cli.App {
 	app.Usage = "Your loyal task runner"
 	app.Version = "0.0.1"
 
-	app.Flags = []cli.Flag{
+	// TODO:  Do a second pass to determine dependencies
+
+	app.Flags = c.getGlobalFlags()
+	app.Commands = c.getCLICommands()
+
+	return app
+}
+
+func (c *GoferConfig) getGlobalFlags() []cli.Flag {
+	return []cli.Flag{
 		cli.BoolFlag{
 			Name:  "explain, e",
 			Usage: "Explain the execution plan, without taking any action",
@@ -27,15 +36,15 @@ func (c *GoferConfig) ToCliApp() *cli.App {
 			Usage: "Suppress command output when running tasks",
 		},
 	}
+}
 
+func (c *GoferConfig) getCLICommands() []cli.Command {
 	commands := []cli.Command{}
 	for name, task := range c.Tasks {
 		commands = append(commands, task.ToCommand(name))
 	}
 
-	app.Commands = commands
-
-	return app
+	return commands
 }
 
 func NewConfig(configFile string) (*GoferConfig, error) {
