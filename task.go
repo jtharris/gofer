@@ -1,11 +1,6 @@
 package main
 
-import (
-	"log"
-	"sync"
-
-	"github.com/urfave/cli"
-)
+import "github.com/urfave/cli"
 
 type GoferTask struct {
 	Description string
@@ -20,88 +15,34 @@ type GoferTask struct {
 	Dependencies []*GoferTask
 }
 
+func (t GoferTask) ToCommand() cli.Command {
+	return cli.Command{
+		Name:  t.Name,
+		Usage: t.Description,
+		Action: func(context *cli.Context) error {
+			// Execute all dependencies before running the task
+			// This includes the current task as well
+			for _, task := range t.Dependencies {
+				result := NewTaskRunner(context, task).Run()
+
+				for _, r := range result.commands {
+					if r.err != nil {
+						return r.err
+					}
+				}
+			}
+
+			return nil
+		},
+	}
+}
+
 type GoferTaskResult struct {
-	Output string
-	Error  error
+	commands []GoferCommandResult
 }
 
 type GoferTaskRunner interface {
-	Run() []GoferTaskResult
-}
-
-type serialTaskRunner struct {
-	commandRunner CommandRunner
-	task          *GoferTask
-}
-
-func (r serialTaskRunner) Run() []GoferTaskResult {
-	results := make([]GoferTaskResult, len(r.task.Commands))
-	for i, command := range r.task.Commands {
-		output, err := r.commandRunner.Run(command)
-
-		results[i] = GoferTaskResult{
-			Output: output,
-			Error:  err,
-		}
-
-		if len(output) > 0 {
-			log.Println(output)
-		}
-
-		if err != nil {
-			return results
-		}
-	}
-
-	return results
-}
-
-type parallelTaskRunner struct {
-	commandRunner CommandRunner
-	task          *GoferTask
-}
-
-func (r parallelTaskRunner) Run() []GoferTaskResult {
-	var wg sync.WaitGroup
-	results := make([]GoferTaskResult, len(r.task.Commands))
-
-	run := func(slot int, command string) {
-		output, err := r.commandRunner.Run(command)
-
-		// TODO:  Is this the right place for this?
-		if len(output) > 0 {
-			log.Println(output)
-		}
-
-		results[slot] = GoferTaskResult{
-			Output: output,
-			Error:  err,
-		}
-
-		wg.Done()
-	}
-
-	wg.Add(len(r.task.Commands))
-	for i, command := range r.task.Commands {
-		go run(i, command)
-	}
-
-	wg.Wait()
-
-	return results
-}
-
-type explainTaskRunner struct {
-	task *GoferTask
-}
-
-func (r explainTaskRunner) Run() []GoferTaskResult {
-	log.Println(r.task.Name)
-	for _, command := range r.task.Commands {
-		log.Println("  |>", command)
-	}
-
-	return []GoferTaskResult{}
+	Run() GoferTaskResult
 }
 
 func NewTaskRunner(context *cli.Context, task *GoferTask) GoferTaskRunner {
@@ -113,35 +54,13 @@ func NewTaskRunner(context *cli.Context, task *GoferTask) GoferTaskRunner {
 
 	if task.Parallel {
 		return parallelTaskRunner{
-			commandRunner: NewCommandRunner(context),
-			task:          task,
+			quiet: context.Parent().Bool("quiet"),
+			task:  task,
 		}
 	}
 
 	return serialTaskRunner{
-		commandRunner: NewCommandRunner(context),
-		task:          task,
-	}
-}
-
-func (t GoferTask) ToCommand() cli.Command {
-	return cli.Command{
-		Name:  t.Name,
-		Usage: t.Description,
-		Action: func(context *cli.Context) error {
-			// Execute all dependencies before running the task
-			// This includes the current task as well
-			for _, task := range t.Dependencies {
-				results := NewTaskRunner(context, task).Run()
-
-				for _, result := range results {
-					if result.Error != nil {
-						return result.Error
-					}
-				}
-			}
-
-			return nil
-		},
+		quiet: context.Parent().Bool("quiet"),
+		task:  task,
 	}
 }
