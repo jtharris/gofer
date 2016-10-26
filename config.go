@@ -40,7 +40,7 @@ func (c *GoferConfig) getGlobalFlags() []cli.Flag {
 }
 
 func (c *GoferConfig) getCLICommands() []cli.Command {
-	commands := []cli.Command{}
+	commands := make([]cli.Command, 0, len(c.Tasks))
 	for _, task := range c.Tasks {
 		commands = append(commands, task.ToCommand())
 	}

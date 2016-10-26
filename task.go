@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sync"
 
 	"github.com/urfave/cli"
 )
@@ -55,6 +56,41 @@ func (r serialTaskRunner) Run() []GoferTaskResult {
 	return results
 }
 
+type parallelTaskRunner struct {
+	commandRunner CommandRunner
+	task          *GoferTask
+}
+
+func (r parallelTaskRunner) Run() []GoferTaskResult {
+	var wg sync.WaitGroup
+	results := make([]GoferTaskResult, len(r.task.Commands))
+
+	run := func(slot int, command string) {
+		output, err := r.commandRunner.Run(command)
+
+		// TODO:  Is this the right place for this?
+		if len(output) > 0 {
+			log.Println(output)
+		}
+
+		results[slot] = GoferTaskResult{
+			Output: output,
+			Error:  err,
+		}
+
+		wg.Done()
+	}
+
+	wg.Add(len(r.task.Commands))
+	for i, command := range r.task.Commands {
+		go run(i, command)
+	}
+
+	wg.Wait()
+
+	return results
+}
+
 type explainTaskRunner struct {
 	task *GoferTask
 }
@@ -72,6 +108,13 @@ func NewTaskRunner(context *cli.Context, task *GoferTask) GoferTaskRunner {
 	if context.Parent().Bool("explain") {
 		return explainTaskRunner{
 			task: task,
+		}
+	}
+
+	if task.Parallel {
+		return parallelTaskRunner{
+			commandRunner: NewCommandRunner(context),
+			task:          task,
 		}
 	}
 
