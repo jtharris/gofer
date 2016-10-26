@@ -41,8 +41,8 @@ func (c *GoferConfig) getGlobalFlags() []cli.Flag {
 
 func (c *GoferConfig) getCLICommands() []cli.Command {
 	commands := []cli.Command{}
-	for name, task := range c.Tasks {
-		commands = append(commands, task.ToCommand(name))
+	for _, task := range c.Tasks {
+		commands = append(commands, task.ToCommand())
 	}
 
 	return commands
@@ -58,6 +58,9 @@ func (c *GoferConfig) populateDependentTasks() error {
 
 	// Add graph edges representing dependencies
 	for name, task := range c.Tasks {
+		// TODO:  Make this a different function altogether...
+		task.Name = name
+
 		for _, dependency := range task.Needs {
 			graph.AddEdge(name, dependency)
 		}
