@@ -27,9 +27,9 @@ func (r serialTaskRunner) Run() GoferTaskResult {
 
 		if !r.quiet {
 			if result.err != nil {
-				fmt.Println(color.RedString("\u2717"))
+				color.Red("\u2717")
 			} else {
-				fmt.Println(color.GreenString("\u2713"))
+				color.Green("\u2713")
 			}
 		}
 
