@@ -1,11 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"sync"
-
-	"github.com/fatih/color"
-)
+import "sync"
 
 type serialTaskRunner struct {
 	quiet bool
@@ -13,25 +8,20 @@ type serialTaskRunner struct {
 }
 
 func (r serialTaskRunner) Run() GoferTaskResult {
+	reporter := CommandReporter{
+		quiet:    r.quiet,
+		parallel: false,
+	}
 	taskResult := GoferTaskResult{
 		commands: make([]GoferCommandResult, len(r.task.Commands)),
 	}
 
-	for i, command := range r.task.Commands {
-		if !r.quiet {
-			fmt.Print(command, " ... ")
-		}
+	reporter.ReportTaskStart(r.task)
 
+	for i, command := range r.task.Commands {
 		result := RunCommand(command)
 		taskResult.commands[i] = result
-
-		if !r.quiet {
-			if result.err != nil {
-				color.Red("\u2717")
-			} else {
-				color.Green("\u2713")
-			}
-		}
+		reporter.ReportResult(&result)
 
 		if result.err != nil {
 			break
@@ -48,22 +38,20 @@ type parallelTaskRunner struct {
 
 func (r parallelTaskRunner) Run() GoferTaskResult {
 	var wg sync.WaitGroup
+	reporter := CommandReporter{
+		quiet:    r.quiet,
+		parallel: true,
+	}
 	taskResult := GoferTaskResult{
 		commands: make([]GoferCommandResult, len(r.task.Commands)),
 	}
 
+	reporter.ReportTaskStart(r.task)
+
 	run := func(slot int, command string) {
 		result := RunCommand(command)
 		taskResult.commands[slot] = result
-
-		// TODO:  Is this the right place for this?
-		if !r.quiet {
-			if result.err != nil {
-				fmt.Println(command, "...", color.RedString("\u2717"))
-			} else {
-				fmt.Println(command, "...", color.GreenString("\u2713"))
-			}
-		}
+		reporter.ReportResult(&result)
 
 		wg.Done()
 	}
@@ -83,24 +71,18 @@ type explainTaskRunner struct {
 }
 
 func (r explainTaskRunner) Run() GoferTaskResult {
-	taskColor := color.New(color.FgHiYellow, color.Bold)
-	taskColor.Println(r.task.Name)
-	var preCommandColor *color.Color
-	var preCommandString string
-
-	if r.task.Parallel {
-		preCommandColor = color.New(color.FgGreen, color.Bold)
-		preCommandString = "  | "
-	} else {
-		preCommandColor = color.New(color.FgWhite, color.Bold)
-		preCommandString = "  |> "
+	reporter := CommandReporter{
+		quiet:    false,
+		parallel: r.task.Parallel,
 	}
 
-	commandColor := color.New(color.FgWhite)
+	reporter.ReportTaskStart(r.task)
 
 	for _, command := range r.task.Commands {
-		preCommandColor.Print(preCommandString)
-		commandColor.Println(command)
+		result := &GoferCommandResult{
+			command: command,
+		}
+		reporter.ReportResult(result)
 	}
 
 	return GoferTaskResult{}

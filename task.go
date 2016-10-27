@@ -1,11 +1,6 @@
 package main
 
-import (
-	"fmt"
-
-	"github.com/fatih/color"
-	"github.com/urfave/cli"
-)
+import "github.com/urfave/cli"
 
 type GoferTask struct {
 	Description string
@@ -32,8 +27,6 @@ func (t GoferTask) ToCommand() cli.Command {
 
 				for _, r := range result.commands {
 					if r.err != nil {
-						fmt.Println("Command error:  ", color.RedString(r.command))
-						fmt.Println(r.output)
 						return r.err
 					}
 				}
