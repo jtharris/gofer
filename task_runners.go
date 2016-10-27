@@ -1,8 +1,10 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"sync"
+
+	"github.com/fatih/color"
 )
 
 type serialTaskRunner struct {
@@ -16,11 +18,19 @@ func (r serialTaskRunner) Run() GoferTaskResult {
 	}
 
 	for i, command := range r.task.Commands {
+		if !r.quiet {
+			fmt.Print(command, " ... ")
+		}
+
 		result := RunCommand(command)
 		taskResult.commands[i] = result
 
 		if !r.quiet {
-			log.Println(result.output)
+			if result.err != nil {
+				fmt.Println(color.RedString("\u2717"))
+			} else {
+				fmt.Println(color.GreenString("\u2713"))
+			}
 		}
 
 		if result.err != nil {
@@ -48,7 +58,11 @@ func (r parallelTaskRunner) Run() GoferTaskResult {
 
 		// TODO:  Is this the right place for this?
 		if !r.quiet {
-			log.Println(result.output)
+			if result.err != nil {
+				fmt.Println(command, "...", color.RedString("\u2717"))
+			} else {
+				fmt.Println(command, "...", color.GreenString("\u2713"))
+			}
 		}
 
 		wg.Done()
@@ -69,9 +83,24 @@ type explainTaskRunner struct {
 }
 
 func (r explainTaskRunner) Run() GoferTaskResult {
-	log.Println(r.task.Name)
+	taskColor := color.New(color.FgHiYellow, color.Bold)
+	taskColor.Println(r.task.Name)
+	var preCommandColor *color.Color
+	var preCommandString string
+
+	if r.task.Parallel {
+		preCommandColor = color.New(color.FgGreen, color.Bold)
+		preCommandString = "  | "
+	} else {
+		preCommandColor = color.New(color.FgWhite, color.Bold)
+		preCommandString = "  |> "
+	}
+
+	commandColor := color.New(color.FgWhite)
+
 	for _, command := range r.task.Commands {
-		log.Println("  |>", command)
+		preCommandColor.Print(preCommandString)
+		commandColor.Println(command)
 	}
 
 	return GoferTaskResult{}
