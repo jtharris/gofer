@@ -1,6 +1,11 @@
 package main
 
-import "github.com/urfave/cli"
+import (
+	"fmt"
+	"os"
+
+	"github.com/urfave/cli"
+)
 
 type GoferTask struct {
 	Description string
@@ -13,6 +18,17 @@ type GoferTask struct {
 	//        This list will include a reference to itself as well
 	Name         string // this should be in a separate struct - make YAML representation different
 	Dependencies []*GoferTask
+}
+
+func (t GoferTask) CreateLogFile(slot int) (*os.File, error) {
+	err := os.MkdirAll("gofer-logs", os.ModePerm)
+
+	if err != nil {
+		return nil, err
+	}
+
+	fileName := fmt.Sprintf("gofer-logs/%s-%d.log", t.Name, slot)
+	return os.Create(fileName)
 }
 
 func (t GoferTask) ToCommand() cli.Command {

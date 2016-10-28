@@ -29,11 +29,10 @@ func (r *CommandReporter) ReportResult(result *GoferCommandResult) {
 		preCommandString = preCommand("  |>")
 	}
 
-	if len(result.output) == 0 {
+	if !result.ran {
 		fmt.Println(preCommandString, result.command)
 	} else if result.err != nil {
 		fmt.Println(preCommandString, result.command, color.RedString("\u2717"))
-		fmt.Println("   ", result.output)
 	} else {
 		fmt.Println(preCommandString, result.command, color.GreenString("\u2713"))
 	}

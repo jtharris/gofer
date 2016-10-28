@@ -1,20 +1,25 @@
 package main
 
-import "os/exec"
+import (
+	"io"
+	"os/exec"
+)
 
 type GoferCommandResult struct {
 	command string
-	output  string
+	ran     bool
 	err     error
 }
 
-func RunCommand(command string) GoferCommandResult {
+func RunCommand(command string, out io.Writer) *GoferCommandResult {
 	// TODO:  Support other shells here?
-	out, err := exec.Command("bash", "-c", command).CombinedOutput()
+	c := exec.Command("bash", "-c", command)
+	c.Stdout = out
+	c.Stderr = out
 
-	return GoferCommandResult{
+	return &GoferCommandResult{
 		command: command,
-		output:  string(out),
-		err:     err,
+		ran:     true,
+		err:     c.Run(),
 	}
 }
