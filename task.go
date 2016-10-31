@@ -18,9 +18,14 @@ type GoferTask struct {
 	//        This list will include a reference to itself as well
 	Name         string // this should be in a separate struct - make YAML representation different
 	Dependencies []*GoferTask
+	LogToFile    bool
 }
 
 func (t GoferTask) CreateLogFile(slot int) (*os.File, error) {
+	if !t.LogToFile {
+		return os.Stdout, nil
+	}
+
 	err := os.MkdirAll("gofer-logs", os.ModePerm)
 
 	if err != nil {
@@ -68,7 +73,11 @@ func NewTaskRunner(context *cli.Context, task *GoferTask) GoferTaskRunner {
 		}
 	}
 
-	if task.Parallel {
+	// TODO:  This is an odd place for this
+	//        Make an explicit conversion step!
+	task.LogToFile = !context.Parent().Bool("no-logs")
+
+	if task.Parallel && task.LogToFile {
 		return parallelTaskRunner{
 			quiet: context.Parent().Bool("quiet"),
 			task:  task,

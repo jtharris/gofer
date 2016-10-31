@@ -36,6 +36,10 @@ func (c *GoferConfig) getGlobalFlags() []cli.Flag {
 			Name:  "quiet, q",
 			Usage: "Suppress command output when running tasks",
 		},
+		cli.BoolFlag{
+			Name:  "no-logs, l",
+			Usage: "Stream task output to stdout, instead of writing to logs.  All tasks will run serially.",
+		},
 	}
 }
 

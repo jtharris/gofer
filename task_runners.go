@@ -30,7 +30,11 @@ func (r serialTaskRunner) Run() GoferTaskResult {
 		}
 
 		if log != nil {
-			defer log.Close()
+			mode, err := log.Stat()
+
+			if err != nil && mode.Mode().IsRegular() {
+				defer log.Close()
+			}
 		}
 
 		result := RunCommand(command, log)
