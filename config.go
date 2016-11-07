@@ -8,22 +8,36 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type GoferConfigDefinition struct {
+	Tasks map[string]*GoferTaskDefinition
+}
+
+func (gcd *GoferConfigDefinition) ToConfig() (*GoferConfig, error) {
+	tasks := make(map[string]*GoferTask)
+	for name, taskDef := range gcd.Tasks {
+		tasks[name] = taskDef.ToGoferTask(name)
+	}
+
+	config := &GoferConfig{
+		Tasks: tasks,
+	}
+
+	return config, config.populateDependentTasks()
+}
+
 type GoferConfig struct {
 	Tasks map[string]*GoferTask
 }
 
-func (c *GoferConfig) ToCliApp() (*cli.App, error) {
+func (c *GoferConfig) ToCliApp() *cli.App {
 	app := cli.NewApp()
 	app.Name = "Gofer"
 	app.Usage = "Your loyal task runner"
 	app.Version = "0.0.1"
-
-	err := c.populateDependentTasks()
-
 	app.Flags = c.getGlobalFlags()
 	app.Commands = c.getCLICommands()
 
-	return app, err
+	return app
 }
 
 func (c *GoferConfig) getGlobalFlags() []cli.Flag {
@@ -62,10 +76,7 @@ func (c *GoferConfig) populateDependentTasks() error {
 
 	// Add graph edges representing dependencies
 	for name, task := range c.Tasks {
-		// TODO:  Make this a different function altogether...
-		task.Name = name
-
-		for _, dependency := range task.Needs {
+		for _, dependency := range task.Definition.Needs {
 			graph.AddEdge(name, dependency)
 		}
 	}
@@ -78,28 +89,28 @@ func (c *GoferConfig) populateDependentTasks() error {
 			return err
 		}
 
-		task.Dependencies = []*GoferTask{}
+		task.TaskChain = []*GoferTask{}
 		for _, depName := range depNames {
-			task.Dependencies = append(task.Dependencies, c.Tasks[depName])
+			task.TaskChain = append(task.TaskChain, c.Tasks[depName])
 		}
 	}
 
 	return nil
 }
 
-func NewConfig(configFile string) (*GoferConfig, error) {
-	config := &GoferConfig{}
+func NewConfigDefinition(configFile string) (*GoferConfigDefinition, error) {
+	definition := &GoferConfigDefinition{}
 	configData, err := ioutil.ReadFile(configFile)
 
 	if err != nil {
 		return nil, err
 	}
 
-	err = yaml.Unmarshal(configData, config)
+	err = yaml.Unmarshal(configData, definition)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return definition, nil
 }

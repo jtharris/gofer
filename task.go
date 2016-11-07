@@ -7,18 +7,27 @@ import (
 	"github.com/urfave/cli"
 )
 
-type GoferTask struct {
+type GoferTaskDefinition struct {
 	Description string
 	Parallel    bool
 	Commands    []string
 	Needs       []string
+}
 
-	// TODO:  Is this mixing concerns?  YAML representation vs. internal
-	// TODO:  Also consider renaming - perhaps "TaskChain" ?
-	//        This list will include a reference to itself as well
-	Name         string // this should be in a separate struct - make YAML representation different
-	Dependencies []*GoferTask
-	LogToFile    bool
+func (td *GoferTaskDefinition) ToGoferTask(name string) *GoferTask {
+	return &GoferTask{
+		Definition: td,
+		Commands:   td.Commands, // TODO:  Expand macros here
+		Name:       name,
+	}
+}
+
+type GoferTask struct {
+	Definition *GoferTaskDefinition
+	Name       string
+	TaskChain  []*GoferTask
+	LogToFile  bool
+	Commands   []string
 }
 
 func (t GoferTask) CreateLogFile(slot int) (*os.File, error) {
@@ -39,11 +48,11 @@ func (t GoferTask) CreateLogFile(slot int) (*os.File, error) {
 func (t GoferTask) ToCommand() cli.Command {
 	return cli.Command{
 		Name:  t.Name,
-		Usage: t.Description,
+		Usage: t.Definition.Description,
 		Action: func(context *cli.Context) error {
 			// Execute all dependencies before running the task
 			// This includes the current task as well
-			for _, task := range t.Dependencies {
+			for _, task := range t.TaskChain {
 				result := NewTaskRunner(context, task).Run()
 
 				for _, r := range result.commands {
@@ -77,7 +86,10 @@ func NewTaskRunner(context *cli.Context, task *GoferTask) GoferTaskRunner {
 	//        Make an explicit conversion step!
 	task.LogToFile = !context.Parent().Bool("no-logs")
 
-	if task.Parallel && task.LogToFile {
+	// TODO:  And once again - need a conversion step
+	task.Commands = task.Definition.Commands
+
+	if task.Definition.Parallel && task.LogToFile {
 		return parallelTaskRunner{
 			quiet: context.Parent().Bool("quiet"),
 			task:  task,

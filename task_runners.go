@@ -107,7 +107,7 @@ type explainTaskRunner struct {
 func (r explainTaskRunner) Run() GoferTaskResult {
 	reporter := CommandReporter{
 		quiet:    false,
-		parallel: r.task.Parallel,
+		parallel: r.task.Definition.Parallel,
 	}
 
 	reporter.ReportTaskStart(r.task)
