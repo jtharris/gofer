@@ -1,12 +1,13 @@
 package main
 
 import (
+	"gofer/gofer"
 	"log"
 	"os"
 )
 
 func main() {
-	configDefinition, err := NewConfigDefinition("gofer.yml")
+	configDefinition, err := gofer.NewConfigDefinition("gofer.yml")
 
 	if err != nil {
 		log.Fatal(err)

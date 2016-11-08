@@ -1,4 +1,4 @@
-package main
+package gofer
 
 import "sync"
 
@@ -9,11 +9,11 @@ type serialTaskRunner struct {
 
 func (r serialTaskRunner) Run() GoferTaskResult {
 	reporter := CommandReporter{
-		quiet:    r.quiet,
-		parallel: false,
+		Quiet:    r.quiet,
+		Parallel: false,
 	}
 	taskResult := GoferTaskResult{
-		commands: make([]GoferCommandResult, len(r.task.Commands)),
+		Commands: make([]GoferCommandResult, len(r.task.Commands)),
 	}
 
 	reporter.ReportTaskStart(r.task)
@@ -21,9 +21,9 @@ func (r serialTaskRunner) Run() GoferTaskResult {
 	for i, command := range r.task.Commands {
 		log, err := r.task.CreateLogFile(i)
 		if err != nil {
-			taskResult.commands[i] = GoferCommandResult{
-				command: command,
-				err:     err,
+			taskResult.Commands[i] = GoferCommandResult{
+				Command: command,
+				Err:     err,
 			}
 
 			break
@@ -38,10 +38,10 @@ func (r serialTaskRunner) Run() GoferTaskResult {
 		}
 
 		result := RunCommand(command, log)
-		taskResult.commands[i] = *result
+		taskResult.Commands[i] = *result
 		reporter.ReportResult(result)
 
-		if result.err != nil {
+		if result.Err != nil {
 			break
 		}
 	}
@@ -57,11 +57,11 @@ type parallelTaskRunner struct {
 func (r parallelTaskRunner) Run() GoferTaskResult {
 	var wg sync.WaitGroup
 	reporter := CommandReporter{
-		quiet:    r.quiet,
-		parallel: true,
+		Quiet:    r.quiet,
+		Parallel: true,
 	}
 	taskResult := GoferTaskResult{
-		commands: make([]GoferCommandResult, len(r.task.Commands)),
+		Commands: make([]GoferCommandResult, len(r.task.Commands)),
 	}
 
 	reporter.ReportTaskStart(r.task)
@@ -74,8 +74,8 @@ func (r parallelTaskRunner) Run() GoferTaskResult {
 		log, err := r.task.CreateLogFile(slot)
 		if err != nil {
 			result = &GoferCommandResult{
-				command: command,
-				err:     err,
+				Command: command,
+				Err:     err,
 			}
 		}
 
@@ -86,7 +86,7 @@ func (r parallelTaskRunner) Run() GoferTaskResult {
 		if result == nil {
 			result = RunCommand(command, log)
 		}
-		taskResult.commands[slot] = *result
+		taskResult.Commands[slot] = *result
 		reporter.ReportResult(result)
 	}
 
@@ -106,15 +106,15 @@ type explainTaskRunner struct {
 
 func (r explainTaskRunner) Run() GoferTaskResult {
 	reporter := CommandReporter{
-		quiet:    false,
-		parallel: r.task.Definition.Parallel,
+		Quiet:    false,
+		Parallel: r.task.Definition.Parallel,
 	}
 
 	reporter.ReportTaskStart(r.task)
 
 	for _, command := range r.task.Commands {
 		result := &GoferCommandResult{
-			command: command,
+			Command: command,
 		}
 		reporter.ReportResult(result)
 	}

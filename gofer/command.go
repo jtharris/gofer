@@ -1,4 +1,4 @@
-package main
+package gofer
 
 import (
 	"io"
@@ -6,9 +6,9 @@ import (
 )
 
 type GoferCommandResult struct {
-	command string
-	ran     bool
-	err     error
+	Command string
+	Ran     bool
+	Err     error
 }
 
 func RunCommand(command string, out io.Writer) *GoferCommandResult {
@@ -18,8 +18,8 @@ func RunCommand(command string, out io.Writer) *GoferCommandResult {
 	c.Stderr = out
 
 	return &GoferCommandResult{
-		command: command,
-		ran:     true,
-		err:     c.Run(),
+		Command: command,
+		Ran:     true,
+		Err:     c.Run(),
 	}
 }

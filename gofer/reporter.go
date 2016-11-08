@@ -1,4 +1,4 @@
-package main
+package gofer
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 )
 
 type CommandReporter struct {
-	quiet    bool
-	parallel bool
+	Quiet    bool
+	Parallel bool
 }
 
 func (r *CommandReporter) ReportTaskStart(task *GoferTask) {
@@ -16,12 +16,12 @@ func (r *CommandReporter) ReportTaskStart(task *GoferTask) {
 }
 
 func (r *CommandReporter) ReportResult(result *GoferCommandResult) {
-	if r.quiet {
+	if r.Quiet {
 		return
 	}
 	var preCommandString string
 
-	if r.parallel {
+	if r.Parallel {
 		preCommand := color.New(color.FgGreen, color.Bold).SprintFunc()
 		preCommandString = preCommand("  |")
 	} else {
@@ -29,11 +29,11 @@ func (r *CommandReporter) ReportResult(result *GoferCommandResult) {
 		preCommandString = preCommand("  |>")
 	}
 
-	if !result.ran {
-		fmt.Println(preCommandString, result.command)
-	} else if result.err != nil {
-		fmt.Println(preCommandString, result.command, color.RedString("\u2717"))
+	if !result.Ran {
+		fmt.Println(preCommandString, result.Command)
+	} else if result.Err != nil {
+		fmt.Println(preCommandString, result.Command, color.RedString("\u2717"))
 	} else {
-		fmt.Println(preCommandString, result.command, color.GreenString("\u2713"))
+		fmt.Println(preCommandString, result.Command, color.GreenString("\u2713"))
 	}
 }

@@ -1,4 +1,4 @@
-package main
+package gofer
 
 import (
 	"fmt"
@@ -55,9 +55,9 @@ func (t GoferTask) ToCommand() cli.Command {
 			for _, task := range t.TaskChain {
 				result := NewTaskRunner(context, task).Run()
 
-				for _, r := range result.commands {
-					if r.err != nil {
-						return r.err
+				for _, r := range result.Commands {
+					if r.Err != nil {
+						return r.Err
 					}
 				}
 			}
@@ -68,7 +68,7 @@ func (t GoferTask) ToCommand() cli.Command {
 }
 
 type GoferTaskResult struct {
-	commands []GoferCommandResult
+	Commands []GoferCommandResult
 }
 
 type GoferTaskRunner interface {

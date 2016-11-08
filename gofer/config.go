@@ -1,4 +1,4 @@
-package main
+package gofer
 
 import (
 	"io/ioutil"
@@ -25,6 +25,23 @@ func (gcd *GoferConfigDefinition) ToConfig() (*GoferConfig, error) {
 	return config, config.populateDependentTasks()
 }
 
+func NewConfigDefinition(configFile string) (*GoferConfigDefinition, error) {
+	definition := &GoferConfigDefinition{}
+	configData, err := ioutil.ReadFile(configFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = yaml.Unmarshal(configData, definition)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return definition, nil
+}
+
 type GoferConfig struct {
 	Tasks map[string]*GoferTask
 }
@@ -34,13 +51,13 @@ func (c *GoferConfig) ToCliApp() *cli.App {
 	app.Name = "Gofer"
 	app.Usage = "Your loyal task runner"
 	app.Version = "0.0.1"
-	app.Flags = c.getGlobalFlags()
-	app.Commands = c.getCLICommands()
+	app.Flags = c.GlobalFlags()
+	app.Commands = c.CLICommands()
 
 	return app
 }
 
-func (c *GoferConfig) getGlobalFlags() []cli.Flag {
+func (c *GoferConfig) GlobalFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.BoolFlag{
 			Name:  "explain, e",
@@ -57,7 +74,7 @@ func (c *GoferConfig) getGlobalFlags() []cli.Flag {
 	}
 }
 
-func (c *GoferConfig) getCLICommands() []cli.Command {
+func (c *GoferConfig) CLICommands() []cli.Command {
 	commands := make([]cli.Command, 0, len(c.Tasks))
 	for _, task := range c.Tasks {
 		commands = append(commands, task.ToCommand())
@@ -96,21 +113,4 @@ func (c *GoferConfig) populateDependentTasks() error {
 	}
 
 	return nil
-}
-
-func NewConfigDefinition(configFile string) (*GoferConfigDefinition, error) {
-	definition := &GoferConfigDefinition{}
-	configData, err := ioutil.ReadFile(configFile)
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = yaml.Unmarshal(configData, definition)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return definition, nil
 }
